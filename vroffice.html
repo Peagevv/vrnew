@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>VR Panorama con imagen 360 personalizada</title>
+  <meta charset="utf-8" />
+  <title>Three.js WebXR VR Hand Input con Panorama 360</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      font-family: sans-serif;
       background-color: #000;
+      font-family: sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     #info {
       position: absolute;
@@ -17,52 +19,68 @@
       text-align: center;
       color: white;
       z-index: 1;
-      font-size: 14px;
+      font-size: 13px;
       user-select: none;
       pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="info">Pulsa el botón VR para entrar en modo VR (si tienes dispositivo compatible).</div>
+  <div id="info">
+    Pulsa el botón VR para entrar en modo VR. Usa controladores o manos para interacción.
+  </div>
 
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
+    import { XRHandModelFactory } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/webxr/XRHandModelFactory.js';
     import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/webxr/VRButton.js';
 
     let camera, scene, renderer;
-    let mesh;
+    let hand1, hand2;
+    let handModelFactory;
 
     init();
     animate();
 
     function init() {
-      const container = document.createElement('div');
-      document.body.appendChild(container);
-
       scene = new THREE.Scene();
 
       camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 1.6, 0);
+      camera.position.set(0, 1.6, 0); // altura típica para VR
 
-      // Geometría esfera para panorama 360 (invertida)
+      // Crear esfera grande invertida para panorama 360
       const geometry = new THREE.SphereGeometry(500, 60, 40);
       geometry.scale(-1, 1, 1); // invertir para ver textura desde dentro
 
-      // Carga tu imagen 360 aquí
+      // Cambia esta ruta por la ruta a tu imagen 360
       const texture = new THREE.TextureLoader().load('111.jpg');
+
       const material = new THREE.MeshBasicMaterial({ map: texture });
+      const sphere = new THREE.Mesh(geometry, material);
+      scene.add(sphere);
 
-      mesh = new THREE.Mesh(geometry, material);
-      scene.add(mesh);
-
+      // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.xr.enabled = true;
-      container.appendChild(renderer.domElement);
+      document.body.appendChild(renderer.domElement);
 
+      // VR Button
       document.body.appendChild(VRButton.createButton(renderer));
+
+      // Manos
+      handModelFactory = new XRHandModelFactory();
+
+      // Manos izquierda y derecha para WebXR
+      hand1 = renderer.xr.getHand(0);
+      hand1.add(handModelFactory.createHandModel(hand1));
+      scene.add(hand1);
+
+      hand2 = renderer.xr.getHand(1);
+      hand2.add(handModelFactory.createHandModel(hand2));
+      scene.add(hand2);
 
       window.addEventListener('resize', onWindowResize);
     }
