@@ -1,86 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Three.js WebXR VR Hand Input con Panorama 360</title>
+  <meta charset="UTF-8" />
+  <title>Three.js WebXR VR Hand Input Cubes Adaptado</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background-color: #000;
       font-family: sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
     #info {
       position: absolute;
       top: 10px;
       width: 100%;
       text-align: center;
-      color: white;
+      color: #fff;
       z-index: 1;
-      font-size: 13px;
       user-select: none;
-      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <div id="info">
-    Pulsa el botón VR para entrar en modo VR. Usa controladores o manos para interacción.
-  </div>
-
+  <div id="info">Usa un visor VR compatible y controla con las manos</div>
   <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
-    import { XRHandModelFactory } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/webxr/XRHandModelFactory.js';
-    import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/webxr/VRButton.js';
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js';
+    import { XRHandModelFactory } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/webxr/XRHandModelFactory.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/controls/OrbitControls.js';
 
     let camera, scene, renderer;
+    let controller1, controller2;
     let hand1, hand2;
     let handModelFactory;
+    const cubes = [];
 
     init();
     animate();
 
     function init() {
+      // Escena y cámara
       scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x222222);
 
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 1.6, 0); // altura típica para VR
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+      camera.position.set(0, 1.6, 3);
 
-      // Crear esfera grande invertida para panorama 360
-      const geometry = new THREE.SphereGeometry(500, 60, 40);
-      geometry.scale(-1, 1, 1); // invertir para ver textura desde dentro
-
-      // Cambia esta ruta por la ruta a tu imagen 360
-      const texture = new THREE.TextureLoader().load('111.jpg');
-
-      const material = new THREE.MeshBasicMaterial({ map: texture });
-      const sphere = new THREE.Mesh(geometry, material);
-      scene.add(sphere);
+      // Luz
+      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      light.position.set(0.5, 1, 0.25);
+      scene.add(light);
 
       // Renderer
       renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.xr.enabled = true;
       document.body.appendChild(renderer.domElement);
 
-      // VR Button
-      document.body.appendChild(VRButton.createButton(renderer));
+      // Controles para testing sin VR
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 1.6, 0);
+      controls.update();
 
-      // Manos
+      // Controladores para las manos
+      controller1 = renderer.xr.getController(0);
+      controller2 = renderer.xr.getController(1);
+      scene.add(controller1);
+      scene.add(controller2);
+
+      // Factory para los modelos de mano
       handModelFactory = new XRHandModelFactory();
 
-      // Manos izquierda y derecha para WebXR
+      // Modelos de manos
       hand1 = renderer.xr.getHand(0);
-      hand1.add(handModelFactory.createHandModel(hand1));
-      scene.add(hand1);
-
       hand2 = renderer.xr.getHand(1);
+      hand1.add(handModelFactory.createHandModel(hand1));
       hand2.add(handModelFactory.createHandModel(hand2));
+      scene.add(hand1);
       scene.add(hand2);
+
+      // Cubos para interactuar
+      const geometry = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+      for (let i = 0; i < 8; i++) {
+        const material = new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(i / 8, 1, 0.5) });
+        const cube = new THREE.Mesh(geometry, material);
+        cube.position.set(Math.random() * 2 - 1, 1.5, Math.random() * -2);
+        scene.add(cube);
+        cubes.push(cube);
+      }
+
+      // Botón para entrar en modo VR
+      document.body.appendChild(THREE.WEBXR.createButton(renderer));
 
       window.addEventListener('resize', onWindowResize);
     }
@@ -97,8 +105,11 @@
     }
 
     function render() {
+      // Puedes agregar aquí interacciones con las manos y los cubos si deseas
+
       renderer.render(scene, camera);
     }
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/webxr/VRButton.js"></script>
 </body>
 </html>
